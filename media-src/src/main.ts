@@ -116,6 +116,8 @@ window.addEventListener('message', (e) => {
       } else {
         vditor.setValue(msg.content)
         console.log('setValue')
+        // Clear decorations when content is updated externally
+        clearDecorations()
       }
       break
     }
@@ -138,6 +140,23 @@ window.addEventListener('message', (e) => {
       })
       break
     }
+    case 'apply-decorations': {
+      console.log('[MarkdownEditor] Received apply-decorations command:', msg.decorations)
+      // Wait for Vditor to be ready if it's still initializing
+      if (!window.vditor) {
+        console.log('[MarkdownEditor] Vditor not ready, waiting...')
+        setTimeout(() => {
+          applyDecorationsToVditor(msg.decorations)
+        }, 500)
+      } else {
+        applyDecorationsToVditor(msg.decorations)
+      }
+      break
+    }
+    case 'clear-decorations': {
+      clearDecorations()
+      break
+    }
     default:
       break
   }
@@ -145,5 +164,134 @@ window.addEventListener('message', (e) => {
 
 fixLinkClick()
 fixCut()
+
+/**
+ * Apply decorations to Vditor's rendered markdown
+ * Maps line numbers to DOM elements and applies CSS classes
+ */
+function applyDecorationsToVditor(decorations: { added: number[]; deleted: number[]; modified: number[] }) {
+  if (!window.vditor || !decorations) {
+    console.log('[MarkdownEditor] Vditor not available or no decorations')
+    return
+  }
+
+  console.log('[MarkdownEditor] Applying decorations:', decorations)
+
+  // Clear existing decorations first
+  clearDecorations()
+
+  // Wait a bit for Vditor to render if needed
+  setTimeout(() => {
+    // Get the Vditor IR container
+    const irContainer = document.querySelector('.vditor-ir')
+    if (!irContainer) {
+      console.log('[MarkdownEditor] Vditor IR container not found')
+      return
+    }
+
+    // Get the markdown content to map line numbers
+    const content = vditor.getValue()
+    const lines = content.split('\n')
+    console.log(`[MarkdownEditor] Content has ${lines.length} lines`)
+
+    // Vditor IR mode renders markdown as HTML elements
+    // We need to find which DOM elements correspond to which source lines
+    // Better approach: Use Vditor's line structure - each line in IR mode typically maps to a block element
+
+    // Get all block-level elements (p, div, h1-h6, li, etc.)
+    const blockElements = Array.from(irContainer.querySelectorAll('p, div.vditor-ir__block, h1, h2, h3, h4, h5, h6, li, pre, blockquote, hr'))
+
+    // Create a map of line numbers to elements
+    // Strategy: Match source lines with rendered blocks by position and content
+    const lineToElements = new Map<number, Element[]>()
+
+    // For each source line, try to find corresponding DOM element
+    for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+      const lineText = lines[lineNum].trim()
+      if (!lineText) {
+        continue
+      }
+
+      // Find block elements that contain this line's text
+      const matchingBlocks = blockElements.filter((block) => {
+        const blockText = block.textContent || ''
+        // Check if block contains the line text or vice versa
+        return blockText.includes(lineText) || lineText.includes(blockText.trim())
+      })
+
+      if (matchingBlocks.length > 0) {
+        lineToElements.set(lineNum, matchingBlocks)
+      } else {
+        // Fallback: use block elements in order (approximate mapping)
+        if (lineNum < blockElements.length) {
+          lineToElements.set(lineNum, [blockElements[lineNum]])
+        }
+      }
+    }
+
+    // Apply decoration classes
+    const applyClass = (lineNum: number, className: string) => {
+      const elements = lineToElements.get(lineNum)
+      if (elements && elements.length > 0) {
+        elements.forEach((el) => {
+          el.classList.add(className)
+          // Also apply to parent container if it's a wrapper
+          let parent = el.parentElement
+          while (parent && parent !== irContainer) {
+            if (parent.classList.contains('vditor-ir__block') || parent.tagName === 'DIV') {
+              parent.classList.add(className)
+              break
+            }
+            parent = parent.parentElement
+          }
+        })
+        console.log(`[MarkdownEditor] Applied ${className} to line ${lineNum}`)
+      } else {
+        console.log(`[MarkdownEditor] Could not find element for line ${lineNum}`)
+      }
+    }
+
+    // Apply added line decorations
+    decorations.added.forEach((lineNum) => {
+      applyClass(lineNum, 'cline-added-line')
+    })
+
+    // Apply deleted line decorations
+    decorations.deleted.forEach((lineNum) => {
+      applyClass(lineNum, 'cline-deleted-line')
+    })
+
+    // Apply modified line decorations
+    decorations.modified.forEach((lineNum) => {
+      applyClass(lineNum, 'cline-modified-line')
+    })
+
+    console.log(
+      `[MarkdownEditor] Applied decorations: ${decorations.added.length} added, ${decorations.deleted.length} deleted, ${decorations.modified.length} modified`
+    )
+  }, 200) // Wait for Vditor to finish rendering
+}
+
+/**
+ * Clear all decoration classes from Vditor DOM
+ */
+function clearDecorations() {
+  if (!window.vditor) {
+    return
+  }
+
+  const irContainer = document.querySelector('.vditor-ir')
+  if (!irContainer) {
+    return
+  }
+
+  // Remove all decoration classes
+  const elements = irContainer.querySelectorAll('.cline-added-line, .cline-deleted-line, .cline-modified-line')
+  elements.forEach((el) => {
+    el.classList.remove('cline-added-line', 'cline-deleted-line', 'cline-modified-line')
+  })
+
+  console.log('[MarkdownEditor] Cleared all decorations')
+}
 
 vscode.postMessage({ command: 'ready' })

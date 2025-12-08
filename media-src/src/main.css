@@ -71,3 +71,24 @@ body[data-use-vscode-theme-color="1"] .vditor {
 .jconfirm-buttons button {
   text-transform: none!important;
 }
+
+/* Cline file approval decorations */
+.cline-added-line {
+  background-color: rgba(0, 255, 0, 0.2) !important;
+  border-left: 3px solid rgba(0, 200, 0, 0.8) !important;
+  padding-left: 5px !important;
+}
+
+.cline-deleted-line {
+  background-color: rgba(255, 0, 0, 0.2) !important;
+  border-left: 3px solid rgba(200, 0, 0, 0.8) !important;
+  text-decoration: line-through !important;
+  opacity: 0.6 !important;
+  padding-left: 5px !important;
+}
+
+.cline-modified-line {
+  background-color: rgba(255, 200, 0, 0.2) !important;
+  border-left: 3px solid rgba(255, 150, 0, 0.8) !important;
+  padding-left: 5px !important;
+}

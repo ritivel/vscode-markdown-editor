@@ -21,6 +21,51 @@ export function activate(context: vscode.ExtensionContext) {
     )
   )
 
+  // Register command to apply decorations from Cline
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'markdown-editor.applyDecorations',
+      (params: { uri: vscode.Uri; decorations: { added: number[]; deleted: number[]; modified: number[] } }) => {
+        if (!params || !params.uri || !params.decorations) {
+          debug('Invalid decoration parameters')
+          return
+        }
+        const panel = EditorPanel.currentPanel
+        if (panel && panel._uri.fsPath === params.uri.fsPath) {
+          panel.postMessage({
+            command: 'apply-decorations',
+            decorations: params.decorations,
+          })
+          debug('Applied decorations to markdown editor', params.decorations)
+        } else {
+          debug('No active markdown editor panel for file:', params.uri.fsPath)
+        }
+      }
+    )
+  )
+
+  // Register command to clear decorations from Cline
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'markdown-editor.clearDecorations',
+      (params: { uri: vscode.Uri }) => {
+        if (!params || !params.uri) {
+          debug('Invalid clear decoration parameters')
+          return
+        }
+        const panel = EditorPanel.currentPanel
+        if (panel && panel._uri.fsPath === params.uri.fsPath) {
+          panel.postMessage({
+            command: 'clear-decorations',
+          })
+          debug('Cleared decorations in markdown editor')
+        } else {
+          debug('No active markdown editor panel for file:', params.uri.fsPath)
+        }
+      }
+    )
+  )
+
   context.globalState.setKeysForSync([KeyVditorOptions])
 }
 
@@ -290,6 +335,13 @@ class EditorPanel {
       imageSaveFolder
     )
     return assetsFolder
+  }
+
+  /**
+   * Post a message to the webview
+   */
+  public postMessage(message: any): void {
+    this._panel.webview.postMessage(message)
   }
 
   public dispose() {
