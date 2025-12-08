@@ -11,6 +11,22 @@ function showError(msg: string) {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  // Register custom text editor provider
+  context.subscriptions.push(
+    vscode.window.registerCustomEditorProvider(
+      'markdown-editor.editor',
+      new MarkdownCustomTextEditorProvider(context),
+      {
+        webviewOptions: {
+          retainContextWhenHidden: true,
+          enableFindWidget: true,
+        },
+        supportsMultipleEditorsPerDocument: false,
+      }
+    )
+  )
+
+  // Keep the command for backward compatibility and manual opening
   context.subscriptions.push(
     vscode.commands.registerCommand(
       'markdown-editor.openEditor',
@@ -25,13 +41,18 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       'markdown-editor.applyDecorations',
-      (params: { uri: vscode.Uri; decorations: { added: number[]; deleted: number[]; modified: number[] } }) => {
+      async (params: { uri: vscode.Uri; decorations: { added: number[]; deleted: number[]; modified: number[] } }) => {
         if (!params || !params.uri || !params.decorations) {
           debug('Invalid decoration parameters')
           return
         }
-        const panel = EditorPanel.currentPanel
-        if (panel && panel._uri.fsPath === params.uri.fsPath) {
+        const panel = EditorPanel.findPanelByUri(params.uri)
+        if (panel) {
+          // First, update the webview content to reflect the current document state
+          // This ensures the webview shows the latest changes
+          await panel.updateContent()
+
+          // Then apply decorations
           panel.postMessage({
             command: 'apply-decorations',
             decorations: params.decorations,
@@ -53,8 +74,8 @@ export function activate(context: vscode.ExtensionContext) {
           debug('Invalid clear decoration parameters')
           return
         }
-        const panel = EditorPanel.currentPanel
-        if (panel && panel._uri.fsPath === params.uri.fsPath) {
+        const panel = EditorPanel.findPanelByUri(params.uri)
+        if (panel) {
           panel.postMessage({
             command: 'clear-decorations',
           })
@@ -66,21 +87,97 @@ export function activate(context: vscode.ExtensionContext) {
     )
   )
 
+  // Register command to clear selection highlights when attachment is removed in Cline
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'markdown-editor.clearSelectionHighlights',
+      (params: { uri: vscode.Uri }) => {
+        if (!params || !params.uri) {
+          debug('Invalid clear selection highlights parameters')
+          return
+        }
+        const panel = EditorPanel.findPanelByUri(params.uri)
+        if (panel) {
+          panel.postMessage({
+            command: 'clear-selection-highlights',
+          })
+          debug('Cleared selection highlights in markdown editor')
+        } else {
+          debug('No active markdown editor panel for file:', params.uri.fsPath)
+        }
+      }
+    )
+  )
+
   context.globalState.setKeysForSync([KeyVditorOptions])
 }
 
 /**
- * Manages cat coding webview panels
+ * Custom Text Editor Provider for markdown files
+ */
+class MarkdownCustomTextEditorProvider implements vscode.CustomTextEditorProvider {
+  constructor(private readonly context: vscode.ExtensionContext) {}
+
+  async resolveCustomTextEditor(
+    document: vscode.TextDocument,
+    webviewPanel: vscode.WebviewPanel,
+    _token: vscode.CancellationToken
+  ): Promise<void> {
+    // Configure webview to allow access to file system resources
+    // Set localResourceRoots on the webview options
+    const webviewOptions = EditorPanel.getWebviewOptions(document.uri)
+    webviewPanel.webview.options = {
+      ...webviewPanel.webview.options,
+      localResourceRoots: webviewOptions.localResourceRoots,
+      enableScripts: true,
+      enableCommandUris: true,
+    }
+
+    // Create EditorPanel instance for this custom editor
+    const panel = EditorPanel.create(
+      this.context,
+      webviewPanel,
+      this.context.extensionUri,
+      document,
+      document.uri
+    )
+    // Register this panel so it can be found by decoration commands
+    EditorPanel.registerPanel(document.uri, panel)
+  }
+}
+
+/**
+ * Manages markdown editor webview panels
  */
 class EditorPanel {
   /**
-   * Track the currently panel. Only allow a single panel to exist at a time.
+   * Track all active panels by URI
+   */
+  private static panels = new Map<string, EditorPanel>()
+
+  /**
+   * Track the currently active panel (for backward compatibility)
    */
   public static currentPanel: EditorPanel | undefined
 
   public static readonly viewType = 'markdown-editor'
 
   private _disposables: vscode.Disposable[] = []
+
+  /**
+   * Register a panel for a given URI
+   */
+  public static registerPanel(uri: vscode.Uri, panel: EditorPanel): void {
+    EditorPanel.panels.set(uri.fsPath, panel)
+    EditorPanel.currentPanel = panel
+  }
+
+  /**
+   * Find a panel by URI
+   */
+  public static findPanelByUri(uri: vscode.Uri): EditorPanel | undefined {
+    return EditorPanel.panels.get(uri.fsPath)
+  }
 
   public static async createOrShow(
     context: vscode.ExtensionContext,
@@ -90,14 +187,28 @@ class EditorPanel {
     const column = vscode.window.activeTextEditor
       ? vscode.window.activeTextEditor.viewColumn
       : undefined
-    if (EditorPanel.currentPanel && uri !== EditorPanel.currentPanel?._uri) {
+
+    // Check if we already have a panel for this URI
+    if (uri) {
+      const existingPanel = EditorPanel.panels.get(uri.fsPath)
+      if (existingPanel) {
+        existingPanel._panel.reveal(column)
+        EditorPanel.currentPanel = existingPanel
+        return
+      }
+    }
+
+    // If we have a current panel for a different URI, dispose it
+    if (EditorPanel.currentPanel && uri && EditorPanel.currentPanel._uri.fsPath !== uri.fsPath) {
       EditorPanel.currentPanel.dispose()
     }
+
     // If we already have a panel, show it.
-    if (EditorPanel.currentPanel) {
+    if (EditorPanel.currentPanel && !uri) {
       EditorPanel.currentPanel._panel.reveal(column)
       return
     }
+
     if (!vscode.window.activeTextEditor && !uri) {
       showError(`Did not open markdown file!`)
       return
@@ -128,19 +239,20 @@ class EditorPanel {
       EditorPanel.viewType,
       'markdown-editor',
       column || vscode.ViewColumn.One,
-      EditorPanel.getWebviewOptions(uri)
+      EditorPanel.getWebviewOptions(uri || doc.uri)
     )
 
-    EditorPanel.currentPanel = new EditorPanel(
+    const editorPanel = new EditorPanel(
       context,
       panel,
       extensionUri,
       doc,
-      uri
+      uri || doc.uri
     )
+    EditorPanel.registerPanel(uri || doc.uri, editorPanel)
   }
 
-  private static getFolders(): vscode.Uri[] {
+  public static getFolders(): vscode.Uri[] {
     const data = []
     for (let i = 65; i <= 90; i++) {
       data.push(vscode.Uri.file(`${String.fromCharCode(i)}:/`))
@@ -168,6 +280,19 @@ class EditorPanel {
     return vscode.workspace.getConfiguration('markdown-editor')
   }
 
+  /**
+   * Create an EditorPanel instance (for use by CustomTextEditorProvider)
+   */
+  public static create(
+    context: vscode.ExtensionContext,
+    panel: vscode.WebviewPanel,
+    extensionUri: vscode.Uri,
+    document: vscode.TextDocument,
+    uri: vscode.Uri
+  ): EditorPanel {
+    return new EditorPanel(context, panel, extensionUri, document, uri)
+  }
+
   private constructor(
     private readonly _context: vscode.ExtensionContext,
     private readonly _panel: vscode.WebviewPanel,
@@ -189,16 +314,22 @@ class EditorPanel {
         this.dispose()
       }
     }, this._disposables)
+    // Track if the last edit came from the webview to avoid circular updates
+    let lastEditFromWebview = false
+
     // update EditorPanel when vsc editor changes
     vscode.workspace.onDidChangeTextDocument((e) => {
       if (e.document.fileName !== this._document.fileName) {
         return
       }
       // 当 webview panel 激活时不将由 webview编辑导致的 vsc 编辑器更新同步回 webview
-      // don't change webview panel when webview panel is focus
-      if (this._panel.active) {
+      // don't change webview panel when webview panel is focus (unless it's an external change)
+      // However, if the edit didn't come from the webview, we should update even if active
+      if (this._panel.active && lastEditFromWebview) {
+        lastEditFromWebview = false
         return
       }
+      lastEditFromWebview = false
       textEditTimer && clearTimeout(textEditTimer)
       textEditTimer = setTimeout(() => {
         this._update()
@@ -228,6 +359,7 @@ class EditorPanel {
         }
         switch (message.command) {
           case 'ready':
+            this._initialized = true
             this._update({
               type: 'init',
               options: {
@@ -255,6 +387,7 @@ class EditorPanel {
           case 'edit': {
             // 只有当 webview 处于编辑状态时才同步到 vsc 编辑器，避免重复刷新
             if (this._panel.active) {
+              lastEditFromWebview = true
               await syncToEditor()
               this._updateEditTitle()
             }
@@ -268,6 +401,103 @@ class EditorPanel {
             await syncToEditor()
             await this._document.save()
             this._updateEditTitle()
+            // Regular save just saves the document - don't try to accept Cline changes
+            // The user should use "Keep All" button if they want to accept pending Cline changes
+            break
+          }
+          case 'cline-undo-changes': {
+            // Execute Cline's reject file changes command
+            try {
+              await vscode.commands.executeCommand('cline.rejectFileChanges')
+            } catch (error) {
+              console.error('Failed to execute cline.rejectFileChanges:', error)
+            }
+            break
+          }
+          case 'cline-keep-changes': {
+            // Execute Cline's accept file changes command
+            try {
+              // Get current document content as baseline (this should have Cline's changes)
+              const currentDocContent = this._document ? this._document.getText() : ''
+
+              // Get the current content from the webview to sync any user edits
+              let webviewContent: string = currentDocContent
+
+              try {
+                // Request current content from webview with a timeout
+                const contentPromise = new Promise<string>((resolve) => {
+                  const timeout = setTimeout(() => {
+                    // Fallback: use document content if webview doesn't respond in time
+                    resolve(currentDocContent)
+                  }, 300)
+
+                  const disposable = this._panel.webview.onDidReceiveMessage((msg: any) => {
+                    if (msg.command === 'current-content') {
+                      clearTimeout(timeout)
+                      disposable.dispose()
+                      // Only use webview content if it's not empty
+                      const content = msg.content || ''
+                      resolve(content.length > 0 ? content : currentDocContent)
+                    }
+                  })
+
+                  // Request content from webview
+                  this._panel.webview.postMessage({ command: 'get-current-content' })
+                })
+
+                webviewContent = await contentPromise
+              } catch (error) {
+                debug('Failed to get webview content, using document content:', error)
+                webviewContent = currentDocContent
+              }
+
+              // Only sync if webview content is different and not empty
+              if (webviewContent && webviewContent.length > 0 && webviewContent !== currentDocContent && this._document) {
+                debug('Syncing webview content to document')
+                const edit = new vscode.WorkspaceEdit()
+                edit.replace(
+                  this._document.uri,
+                  new vscode.Range(0, 0, this._document.lineCount, 0),
+                  webviewContent
+                )
+                await vscode.workspace.applyEdit(edit)
+              }
+
+              // Save the document (only if it has content)
+              if (this._document) {
+                const contentToSave = this._document.getText()
+                if (contentToSave.length > 0) {
+                  await this._document.save()
+                  this._updateEditTitle()
+                } else {
+                  debug('Warning: Document is empty, not saving')
+                  // Don't proceed if document is empty
+                  showError('Cannot save: document appears to be empty')
+                  return
+                }
+              }
+
+              // Accept the changes (this will clear decorations)
+              await vscode.commands.executeCommand('cline.acceptFileChanges')
+
+              // Refresh webview to show saved content (with a small delay to ensure save is complete)
+              setTimeout(async () => {
+                // Verify document still has content before updating
+                if (this._document && this._document.getText().length > 0) {
+                  await this.updateContent()
+                } else {
+                  debug('Warning: Document is empty after accept, not updating webview')
+                }
+              }, 150)
+            } catch (error) {
+              console.error('Failed to execute cline.acceptFileChanges:', error)
+              // On error, try to refresh the webview if document has content
+              if (this._document && this._document.getText().length > 0) {
+                setTimeout(async () => {
+                  await this.updateContent()
+                }, 150)
+              }
+            }
             break
           }
           case 'upload': {
@@ -309,6 +539,66 @@ class EditorPanel {
             vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(url))
             break
           }
+          case 'add-to-ritivel': {
+            // Execute Cline's addToChatDirect command with the selected text and range
+            // Range info allows Cline to know exact line numbers in the source file
+            try {
+              const filePath = this._uri.fsPath
+              const range = message.range ? {
+                startLine: message.range.startLine,
+                startChar: message.range.startChar,
+                endLine: message.range.endLine,
+                endChar: message.range.endChar
+              } : undefined
+
+              await vscode.commands.executeCommand('cline.addToChatDirect', {
+                selectedText: message.selectedText,
+                filePath: filePath,
+                language: 'markdown',
+                range: range
+              })
+              debug('add-to-ritivel executed', {
+                text: message.selectedText?.substring(0, 50),
+                range: range
+              })
+            } catch (error) {
+              console.error('Failed to execute cline.addToChatDirect:', error)
+              // Fallback: try to focus Cline chat
+              try {
+                await vscode.commands.executeCommand('cline.focusChatInput')
+              } catch (e) {
+                console.error('Failed to focus Cline chat:', e)
+              }
+            }
+            break
+          }
+          case 'quick-edit': {
+            // Execute Cline's improveCodeDirect command with the selected text and range
+            // Range info allows Cline to know exact line numbers in the source file
+            try {
+              const filePath = this._uri.fsPath
+              const range = message.range ? {
+                startLine: message.range.startLine,
+                startChar: message.range.startChar,
+                endLine: message.range.endLine,
+                endChar: message.range.endChar
+              } : undefined
+
+              await vscode.commands.executeCommand('cline.improveCodeDirect', {
+                selectedText: message.selectedText,
+                filePath: filePath,
+                language: 'markdown',
+                range: range
+              })
+              debug('quick-edit executed', {
+                text: message.selectedText?.substring(0, 50),
+                range: range
+              })
+            } catch (error) {
+              console.error('Failed to execute cline.improveCodeDirect:', error)
+            }
+            break
+          }
         }
       },
       null,
@@ -344,8 +634,38 @@ class EditorPanel {
     this._panel.webview.postMessage(message)
   }
 
+  /**
+   * Update the webview content to match the current document
+   * Only updates if content has actually changed
+   */
+  public async updateContent(force: boolean = false): Promise<void> {
+    const currentDocContent = this._document ? this._document.getText() : ''
+
+    // Send update message - the webview will check if content changed
+    await this._update({
+      type: 'update',
+      options: {
+        useVscodeThemeColor: EditorPanel.config.get<boolean>(
+          'useVscodeThemeColor'
+        ),
+        ...this._context.globalState.get(KeyVditorOptions),
+      },
+      theme:
+        vscode.window.activeColorTheme.kind ===
+        vscode.ColorThemeKind.Dark
+          ? 'dark'
+          : 'light',
+    })
+  }
+
   public dispose() {
-    EditorPanel.currentPanel = undefined
+    // Remove from panels map
+    EditorPanel.panels.delete(this._uri.fsPath)
+
+    // Update currentPanel if it was this one
+    if (EditorPanel.currentPanel === this) {
+      EditorPanel.currentPanel = undefined
+    }
 
     // Clean up our resources
     this._panel.dispose()
@@ -358,11 +678,42 @@ class EditorPanel {
     }
   }
 
+  private _initialized = false
+
   private _init() {
     const webview = this._panel.webview
 
     this._panel.webview.html = this._getHtmlForWebview(webview)
     this._panel.title = NodePath.basename(this._fsPath)
+    this._initialized = false
+
+    // For custom editors, ensure content is sent after a short delay
+    // in case the 'ready' message doesn't arrive (fallback)
+    const fallbackTimer = setTimeout(() => {
+      if (!this._initialized && this._document) {
+        debug('Fallback: Sending content without ready message')
+        this._update({
+          type: 'init',
+          options: {
+            useVscodeThemeColor: EditorPanel.config.get<boolean>(
+              'useVscodeThemeColor'
+            ),
+            ...this._context.globalState.get(KeyVditorOptions),
+          },
+          theme:
+            vscode.window.activeColorTheme.kind ===
+            vscode.ColorThemeKind.Dark
+              ? 'dark'
+              : 'light',
+        })
+        this._initialized = true
+      }
+    }, 1000)
+
+    // Store timer for cleanup
+    this._disposables.push({
+      dispose: () => clearTimeout(fallbackTimer)
+    })
   }
   private _isEdit = false
   private _updateEditTitle() {

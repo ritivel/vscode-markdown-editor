@@ -73,22 +73,218 @@ body[data-use-vscode-theme-color="1"] .vditor {
 }
 
 /* Cline file approval decorations */
-.cline-added-line {
-  background-color: rgba(0, 255, 0, 0.2) !important;
-  border-left: 3px solid rgba(0, 200, 0, 0.8) !important;
+/* Added lines (new content) - GREEN background */
+.cline-added-line,
+.vditor-ir .cline-added-line,
+.vditor-ir__node.cline-added-line,
+.vditor-ir__block.cline-added-line {
+  background-color: rgba(35, 134, 54, 0.3) !important;
+  border-left: 3px solid #28a745 !important;
   padding-left: 5px !important;
+  margin-left: -5px !important;
 }
 
-.cline-deleted-line {
-  background-color: rgba(255, 0, 0, 0.2) !important;
-  border-left: 3px solid rgba(200, 0, 0, 0.8) !important;
+/* Deleted lines (removed content) - RED background */
+.cline-deleted-line,
+.vditor-ir .cline-deleted-line,
+.vditor-ir__node.cline-deleted-line,
+.vditor-ir__block.cline-deleted-line {
+  background-color: rgba(215, 58, 73, 0.3) !important;
+  border-left: 3px solid #d73a49 !important;
   text-decoration: line-through !important;
-  opacity: 0.6 !important;
+  opacity: 0.7 !important;
   padding-left: 5px !important;
+  margin-left: -5px !important;
 }
 
-.cline-modified-line {
-  background-color: rgba(255, 200, 0, 0.2) !important;
-  border-left: 3px solid rgba(255, 150, 0, 0.8) !important;
+/* Modified lines - YELLOW/ORANGE background */
+.cline-modified-line,
+.vditor-ir .cline-modified-line,
+.vditor-ir__node.cline-modified-line,
+.vditor-ir__block.cline-modified-line {
+  background-color: rgba(227, 179, 65, 0.3) !important;
+  border-left: 3px solid #e3b341 !important;
   padding-left: 5px !important;
+  margin-left: -5px !important;
+}
+
+#cline-line-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 3;
+  white-space: pre;
+}
+
+#cline-line-overlay .cline-line {
+  box-sizing: border-box;
+  color: transparent; /* prevent duplicate text overlay */
+}
+
+/* Ensure unchanged content has no decoration background */
+.vditor-ir > *:not(.cline-added-line):not(.cline-deleted-line):not(.cline-modified-line) {
+  /* Let unchanged content keep its default background */
+}
+
+/* Cline floating toolbar for Undo/Keep changes */
+.cline-floating-toolbar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.cline-floating-toolbar.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.cline-floating-toolbar .cline-toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.cline-floating-toolbar .cline-toolbar-btn.undo {
+  background-color: transparent;
+  color: var(--vscode-foreground, #cccccc);
+  border: 1px solid var(--vscode-button-secondaryBackground, #3a3d41);
+}
+
+.cline-floating-toolbar .cline-toolbar-btn.undo:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
+
+.cline-floating-toolbar .cline-toolbar-btn.keep {
+  background-color: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.cline-floating-toolbar .cline-toolbar-btn.keep:hover {
+  background-color: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.cline-floating-toolbar .cline-toolbar-shortcut {
+  opacity: 0.7;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.cline-floating-toolbar .cline-toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background-color: var(--vscode-editorWidget-border, #454545);
+  margin: 0 4px;
+}
+
+.cline-floating-toolbar .cline-toolbar-info {
+  color: var(--vscode-descriptionForeground, #8b8b8b);
+  font-size: 11px;
+}
+
+/* Selection context menu (Add to Ritivel / Quick Edit) */
+.selection-context-menu {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background-color: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10001;
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+
+.selection-context-menu.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.selection-context-menu .context-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  background-color: transparent;
+  color: var(--vscode-foreground, #cccccc);
+  transition: background-color 0.12s ease;
+  white-space: nowrap;
+}
+
+.selection-context-menu .context-btn:hover {
+  background-color: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.selection-context-menu .context-btn:active {
+  background-color: var(--vscode-list-activeSelectionBackground, #094771);
+}
+
+.selection-context-menu .context-btn .btn-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.85;
+}
+
+.selection-context-menu .context-btn .btn-shortcut {
+  opacity: 0.5;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.selection-context-menu .context-divider {
+  width: 1px;
+  height: 18px;
+  background-color: var(--vscode-editorWidget-border, #454545);
+  margin: 0 2px;
+}
+
+/* Selection highlight for text added to chat - lighter blue */
+.cline-selection-added-to-chat {
+  background-color: rgba(100, 181, 246, 0.3) !important;
+  border-radius: 2px;
+  padding: 1px 0;
+  transition: background-color 0.3s ease;
+}
+
+/* Lighter variant for IR mode */
+.vditor-ir .cline-selection-added-to-chat {
+  background-color: rgba(120, 200, 255, 0.35) !important;
 }
