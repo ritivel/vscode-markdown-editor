@@ -74,21 +74,19 @@ body[data-use-vscode-theme-color="1"] .vditor {
 
 /* Cline file approval decorations */
 .cline-added-line {
-  background-color: rgba(0, 255, 0, 0.2) !important;
-  border-left: 3px solid rgba(0, 200, 0, 0.8) !important;
+  background-color: rgba(144, 238, 144, 0.15) !important;
+  border-left: 2px solid rgba(76, 175, 80, 0.6) !important;
   padding-left: 5px !important;
 }
 
 .cline-deleted-line {
-  background-color: rgba(255, 0, 0, 0.2) !important;
-  border-left: 3px solid rgba(200, 0, 0, 0.8) !important;
-  text-decoration: line-through !important;
-  opacity: 0.6 !important;
+  background-color: rgba(255, 182, 193, 0.15) !important;
+  border-left: 2px solid rgba(244, 67, 54, 0.6) !important;
   padding-left: 5px !important;
 }
 
 .cline-modified-line {
-  background-color: rgba(255, 200, 0, 0.2) !important;
-  border-left: 3px solid rgba(255, 150, 0, 0.8) !important;
+  background-color: rgba(255, 235, 59, 0.15) !important;
+  border-left: 2px solid rgba(255, 193, 7, 0.6) !important;
   padding-left: 5px !important;
 }
