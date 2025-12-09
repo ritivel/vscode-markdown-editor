@@ -1,35 +1,111 @@
 /* @import url('vditor/dist/index.css');
 @import url('jquery-confirm/css/jquery-confirm.css'); */
+
+/* ============================================
+   RITIVEL - Life Sciences SaaS AI Platform
+   Clinical Blue Theme
+   ============================================ */
+
+/* CSS Custom Properties for Life Sciences Theme */
+:root {
+  /* Primary Blues - Deep, Trustworthy */
+  --ritivel-primary: #1976D2; /* Stronger Blue */
+  --ritivel-primary-dark: #1565C0;
+  --ritivel-primary-light: #42A5F5;
+  --ritivel-primary-pale: #BBDEFB; /* Solid Light Blue */
+
+  /* Secondary Accent Colors */
+  --ritivel-success: #66BB6A;
+  --ritivel-success-dark: #388E3C;
+  --ritivel-warning: #FFA726;
+  --ritivel-error: #EF5350;
+  --ritivel-error-light: #FFCDD2;
+  --ritivel-info: #26C6DA;
+  --ritivel-purple: #AB47BC;
+
+  /* Backgrounds - Solid Colors, Not Just Tinted White */
+  --ritivel-bg-warm: #E3F2FD; /* Light Blue Background */
+  --ritivel-bg-cool: #BBDEFB; /* Distinct Pane Color */
+  --ritivel-bg-surface: #E3F2FD;
+  --ritivel-bg-elevated: #FFFFFF; /* Cards pop out */
+
+  /* Text Colors - High Contrast */
+  --ritivel-text-primary: #0D47A1; /* Dark Blue Text */
+  --ritivel-text-secondary: #1565C0;
+  --ritivel-text-muted: #546E7A;
+  --ritivel-text-placeholder: #90A4AE;
+
+  /* Borders - Visible */
+  --ritivel-border: #90CAF9;
+  --ritivel-border-focus: #1976D2;
+  --ritivel-border-strong: #64B5F6;
+  --ritivel-radius: 8px;
+  --ritivel-radius-sm: 4px;
+  --ritivel-radius-lg: 12px;
+
+  /* Shadows - Crisp */
+  --ritivel-shadow-sm: 0 1px 3px rgba(13, 71, 161, 0.12);
+  --ritivel-shadow-md: 0 4px 6px rgba(13, 71, 161, 0.15);
+  --ritivel-shadow-lg: 0 10px 15px rgba(13, 71, 161, 0.15);
+}
+
 body {
   margin: 0;
   padding: 0;
 }
+
 html,
 body,
 #app {
   height: 100%;
   width: 100%;
 }
+
+/* Override Vditor with VS Code theme or custom Life Sciences theme */
 body[data-use-vscode-theme-color="1"] .vditor {
   --panel-background-color: var(--vscode-editor-background);
   --toolbar-background-color: var(--vscode-editor-background);
   --textarea-background-color: var(--vscode-editor-background);
 }
-/* fix font family */
+
+/* Custom Life Sciences theme when not using VS Code colors */
+body[data-use-vscode-theme-color="0"] .vditor {
+  --panel-background-color: var(--ritivel-bg-warm);
+  --toolbar-background-color: var(--ritivel-bg-surface);
+  --textarea-background-color: var(--ritivel-bg-warm);
+}
+
+/* Fix font family */
 .vditor .vditor-reset {
-  font-family: var(--vscode-editor-font-family)!important;
+  font-family: var(--vscode-editor-font-family) !important;
 }
-/* fix code block color in dark mode */
+
+/* Light theme code block styling */
+.vditor-reset code:not(.hljs):not(.highlight-chroma) {
+  background-color: var(--ritivel-primary-pale);
+  color: var(--ritivel-primary-dark);
+  padding: 2px 6px;
+  border-radius: var(--ritivel-radius-sm);
+  font-size: 0.9em;
+}
+
+/* Dark theme code block styling */
 .vditor--dark .vditor-reset code:not(.hljs):not(.highlight-chroma) {
-  background-color: rgba(66,133,244,.1);
+  background-color: rgba(126, 182, 232, 0.15);
+  color: #9AC5E8;
 }
-/* fix outline toolbar padding */
+
+/* Fix outline toolbar padding */
 .vditor-toolbar.vditor-toolbar--pin {
-  padding-left: 35px!important;
+  padding-left: 35px !important;
+  border-bottom: 1px solid var(--ritivel-border);
 }
+
 .vditor-ir pre.vditor-reset {
   position: relative;
 }
+
+/* Panel styling with Life Sciences theme */
 .vditor-panel {
   transform: translate(-25px, 0);
   max-width: 21px;
@@ -37,6 +113,7 @@ body[data-use-vscode-theme-color="1"] .vditor {
   overflow: hidden;
   transition: width 0.2s ease-in-out;
 }
+
 .vditor-panel::after {
   content: '...';
   width: 21px;
@@ -44,14 +121,16 @@ body[data-use-vscode-theme-color="1"] .vditor {
   position: absolute;
   left: 0;
   top: 0;
-  background-color: white;
-  color: black;
+  background-color: var(--ritivel-bg-elevated);
+  color: var(--ritivel-text-secondary);
   text-align: center;
   font-family: none;
+  border-radius: var(--ritivel-radius-sm);
 }
+
 .vditor-panel:hover,
 .vditor-panel_hover {
-  opacity: 0.86;
+  opacity: 0.92;
   max-width: none;
   max-height: none;
   overflow: visible;
@@ -65,49 +144,63 @@ body[data-use-vscode-theme-color="1"] .vditor {
 .vditor-reset {
   padding-left: 35px !important;
 }
+
+/* jQuery Confirm dialog styling */
 .jconfirm {
-  color: black;
-}
-.jconfirm-buttons button {
-  text-transform: none!important;
+  color: var(--ritivel-text-primary);
 }
 
-/* Cline file approval decorations */
-/* Added lines (new content) - GREEN background */
+.jconfirm-buttons button {
+  text-transform: none !important;
+  background-color: var(--ritivel-primary) !important;
+  border-radius: var(--ritivel-radius) !important;
+}
+
+.jconfirm-buttons button:hover {
+  background-color: var(--ritivel-primary-dark) !important;
+}
+
+/* ============================================
+   CLINE FILE APPROVAL DECORATIONS
+   Life Sciences Pastel Colors
+   ============================================ */
+
+/* Added lines (new content) - Soft Sage Green */
 .cline-added-line,
 .vditor-ir .cline-added-line,
 .vditor-ir__node.cline-added-line,
 .vditor-ir__block.cline-added-line {
-  background-color: rgba(35, 134, 54, 0.3) !important;
-  border-left: 3px solid #28a745 !important;
+  background-color: rgba(139, 196, 168, 0.25) !important;
+  border-left: 3px solid var(--ritivel-success) !important;
   padding-left: 5px !important;
   margin-left: -5px !important;
 }
 
-/* Deleted lines (removed content) - RED background */
+/* Deleted lines (removed content) - Soft Coral Rose */
 .cline-deleted-line,
 .vditor-ir .cline-deleted-line,
 .vditor-ir__node.cline-deleted-line,
 .vditor-ir__block.cline-deleted-line {
-  background-color: rgba(215, 58, 73, 0.3) !important;
-  border-left: 3px solid #d73a49 !important;
+  background-color: rgba(217, 139, 139, 0.2) !important;
+  border-left: 3px solid var(--ritivel-error) !important;
   text-decoration: line-through !important;
   opacity: 0.7 !important;
   padding-left: 5px !important;
   margin-left: -5px !important;
 }
 
-/* Modified lines - YELLOW/ORANGE background */
+/* Modified lines - Soft Warm Amber */
 .cline-modified-line,
 .vditor-ir .cline-modified-line,
 .vditor-ir__node.cline-modified-line,
 .vditor-ir__block.cline-modified-line {
-  background-color: rgba(227, 179, 65, 0.3) !important;
-  border-left: 3px solid #e3b341 !important;
+  background-color: rgba(232, 200, 120, 0.25) !important;
+  border-left: 3px solid var(--ritivel-warning) !important;
   padding-left: 5px !important;
   margin-left: -5px !important;
 }
 
+/* Line overlay for decorations */
 #cline-line-overlay {
   position: absolute;
   top: 0;
@@ -120,15 +213,16 @@ body[data-use-vscode-theme-color="1"] .vditor {
 
 #cline-line-overlay .cline-line {
   box-sizing: border-box;
-  color: transparent; /* prevent duplicate text overlay */
+  color: transparent;
 }
 
 /* Ensure unchanged content has no decoration background */
-.vditor-ir > *:not(.cline-added-line):not(.cline-deleted-line):not(.cline-modified-line) {
-  /* Let unchanged content keep its default background */
-}
+/* .vditor-ir > *:not(.cline-added-line):not(.cline-deleted-line):not(.cline-modified-line) {} */
 
-/* Cline floating toolbar for Undo/Keep changes */
+/* ============================================
+   CLINE FLOATING TOOLBAR
+   Life Sciences Professional Design
+   ============================================ */
 .cline-floating-toolbar {
   position: fixed;
   bottom: 20px;
@@ -136,18 +230,18 @@ body[data-use-vscode-theme-color="1"] .vditor {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background-color: var(--vscode-editor-background, #1e1e1e);
-  border: 1px solid var(--vscode-editorWidget-border, #454545);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  gap: 10px;
+  padding: 10px 18px;
+  background-color: var(--vscode-editor-background, var(--ritivel-bg-elevated));
+  border: 1px solid var(--vscode-editorWidget-border, var(--ritivel-border));
+  border-radius: 10px;
+  box-shadow: var(--ritivel-shadow-lg);
   z-index: 10000;
-  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, sans-serif);
-  font-size: 12px;
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  font-size: 13px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
 }
 
 .cline-floating-toolbar.visible {
@@ -159,65 +253,74 @@ body[data-use-vscode-theme-color="1"] .vditor {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
-  transition: background-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .cline-floating-toolbar .cline-toolbar-btn.undo {
   background-color: transparent;
-  color: var(--vscode-foreground, #cccccc);
-  border: 1px solid var(--vscode-button-secondaryBackground, #3a3d41);
+  color: var(--vscode-foreground, var(--ritivel-text-primary));
+  border: 1px solid var(--vscode-button-secondaryBackground, var(--ritivel-border-strong));
 }
 
 .cline-floating-toolbar .cline-toolbar-btn.undo:hover {
-  background-color: var(--vscode-button-secondaryHoverBackground, #45494e);
+  background-color: var(--vscode-button-secondaryHoverBackground, var(--ritivel-bg-surface));
+  border-color: var(--ritivel-error-light);
+  color: var(--ritivel-error);
 }
 
 .cline-floating-toolbar .cline-toolbar-btn.keep {
-  background-color: var(--vscode-button-background, #0e639c);
+  background-color: var(--vscode-button-background, var(--ritivel-success));
   color: var(--vscode-button-foreground, #ffffff);
 }
 
 .cline-floating-toolbar .cline-toolbar-btn.keep:hover {
-  background-color: var(--vscode-button-hoverBackground, #1177bb);
+  background-color: var(--vscode-button-hoverBackground, var(--ritivel-success-dark));
+  transform: translateY(-1px);
 }
 
 .cline-floating-toolbar .cline-toolbar-shortcut {
-  opacity: 0.7;
-  font-size: 11px;
+  opacity: 0.6;
+  font-size: 10px;
   margin-left: 4px;
+  background-color: rgba(0, 0, 0, 0.08);
+  padding: 2px 5px;
+  border-radius: 3px;
 }
 
 .cline-floating-toolbar .cline-toolbar-separator {
   width: 1px;
-  height: 20px;
-  background-color: var(--vscode-editorWidget-border, #454545);
+  height: 24px;
+  background-color: var(--vscode-editorWidget-border, var(--ritivel-border));
   margin: 0 4px;
 }
 
 .cline-floating-toolbar .cline-toolbar-info {
-  color: var(--vscode-descriptionForeground, #8b8b8b);
+  color: var(--vscode-descriptionForeground, var(--ritivel-text-muted));
   font-size: 11px;
 }
 
-/* Selection context menu (Add to Ritivel / Quick Edit) */
+/* ============================================
+   SELECTION CONTEXT MENU
+   Life Sciences Professional Design
+   ============================================ */
 .selection-context-menu {
   position: fixed;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 6px;
-  background-color: var(--vscode-editorWidget-background, #252526);
-  border: 1px solid var(--vscode-editorWidget-border, #454545);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  padding: 6px 8px;
+  background-color: var(--vscode-editorWidget-background, var(--ritivel-bg-elevated));
+  border: 1px solid var(--vscode-editorWidget-border, var(--ritivel-border));
+  border-radius: 8px;
+  box-shadow: var(--ritivel-shadow-lg);
   z-index: 10001;
-  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
   font-size: 12px;
   opacity: 0;
   visibility: hidden;
@@ -236,25 +339,27 @@ body[data-use-vscode-theme-color="1"] .vditor {
 .selection-context-menu .context-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
+  gap: 6px;
+  padding: 7px 12px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 11px;
   font-weight: 500;
   background-color: transparent;
-  color: var(--vscode-foreground, #cccccc);
-  transition: background-color 0.12s ease;
+  color: var(--vscode-foreground, var(--ritivel-text-primary));
+  transition: all 0.12s ease;
   white-space: nowrap;
 }
 
 .selection-context-menu .context-btn:hover {
-  background-color: var(--vscode-list-hoverBackground, #2a2d2e);
+  background-color: var(--vscode-list-hoverBackground, var(--ritivel-primary-pale));
+  color: var(--ritivel-primary-dark);
 }
 
 .selection-context-menu .context-btn:active {
-  background-color: var(--vscode-list-activeSelectionBackground, #094771);
+  background-color: var(--vscode-list-activeSelectionBackground, var(--ritivel-primary));
+  color: #ffffff;
 }
 
 .selection-context-menu .context-btn .btn-icon {
@@ -263,28 +368,515 @@ body[data-use-vscode-theme-color="1"] .vditor {
   opacity: 0.85;
 }
 
+.selection-context-menu .context-btn:hover .btn-icon {
+  opacity: 1;
+}
+
 .selection-context-menu .context-btn .btn-shortcut {
   opacity: 0.5;
   font-size: 10px;
   margin-left: 4px;
+  background-color: rgba(0, 0, 0, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
 }
 
 .selection-context-menu .context-divider {
   width: 1px;
-  height: 18px;
-  background-color: var(--vscode-editorWidget-border, #454545);
-  margin: 0 2px;
+  height: 20px;
+  background-color: var(--vscode-editorWidget-border, var(--ritivel-border));
+  margin: 0 4px;
 }
 
-/* Selection highlight for text added to chat - lighter blue */
+/* ============================================
+   SELECTION HIGHLIGHT
+   Soft Blue for "Add to Chat" Selections
+   ============================================ */
 .cline-selection-added-to-chat {
-  background-color: rgba(100, 181, 246, 0.3) !important;
-  border-radius: 2px;
+  background-color: rgba(126, 182, 232, 0.25) !important;
+  border-radius: 3px;
   padding: 1px 0;
   transition: background-color 0.3s ease;
+  box-shadow: 0 0 0 1px rgba(126, 182, 232, 0.3);
 }
 
 /* Lighter variant for IR mode */
 .vditor-ir .cline-selection-added-to-chat {
-  background-color: rgba(120, 200, 255, 0.35) !important;
+  background-color: rgba(154, 197, 232, 0.3) !important;
+}
+
+/* ============================================
+   VDITOR TOOLBAR ENHANCEMENTS
+   Life Sciences Professional Style - Notion-like Minimal
+   ============================================ */
+.vditor-toolbar {
+  background-color: var(--vscode-editor-background, var(--ritivel-bg-surface)) !important;
+  border: 1px solid var(--ritivel-border) !important;
+  border-radius: 12px !important;
+  margin: 8px 12px 0 12px !important;
+  padding: 4px 6px !important;
+  box-shadow: var(--ritivel-shadow-sm) !important;
+  height: auto !important;
+  min-height: 36px !important;
+
+  /* Flex layout for center alignment and wrapping */
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 2px !important;
+}
+
+.vditor-toolbar__item {
+  color: var(--ritivel-text-secondary) !important;
+  border-radius: 6px !important;
+  margin: 1px !important;
+  padding: 2px 4px !important;
+  transition: all 0.2s ease !important;
+
+  /* Smaller icons/items */
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.vditor-toolbar__item.toolbar-break {
+  flex-basis: 100%;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 4px 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.vditor-toolbar__item svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.vditor-toolbar__item:hover {
+  background-color: var(--ritivel-primary-pale) !important;
+  color: var(--ritivel-primary-dark) !important;
+  transform: translateY(-1px);
+}
+
+.vditor-toolbar__item--current {
+  background-color: rgba(126, 182, 232, 0.2) !important;
+  color: var(--ritivel-primary-dark) !important;
+  font-weight: 600 !important;
+}
+
+.vditor-toolbar__divider {
+  margin: 0 4px !important;
+  height: 14px !important;
+  border-left: 1px solid var(--ritivel-border) !important;
+}
+
+/* Tooltips */
+.vditor-hint {
+  background-color: var(--ritivel-bg-elevated) !important;
+  border: 1px solid var(--ritivel-border) !important;
+  border-radius: var(--ritivel-radius) !important;
+  box-shadow: var(--ritivel-shadow-md) !important;
+}
+
+.vditor-hint button {
+  color: var(--ritivel-text-primary) !important;
+}
+
+.vditor-hint button:hover {
+  background-color: var(--ritivel-primary-pale) !important;
+  color: var(--ritivel-primary-dark) !important;
+}
+
+/* ============================================
+   LINKS AND INTERACTIVE ELEMENTS
+   ============================================ */
+.vditor-reset a {
+  color: var(--ritivel-primary-dark) !important;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(90, 138, 181, 0.3);
+  transition: border-color 0.2s ease;
+}
+
+.vditor-reset a:hover {
+  color: var(--ritivel-primary) !important;
+  border-bottom-color: var(--ritivel-primary);
+}
+
+/* ============================================
+   HEADINGS STYLING
+   ============================================ */
+.vditor-reset h1,
+.vditor-reset h2,
+.vditor-reset h3,
+.vditor-reset h4,
+.vditor-reset h5,
+.vditor-reset h6 {
+  color: var(--vscode-editor-foreground, var(--ritivel-text-primary)) !important;
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.vditor-reset h1 {
+  border-bottom: 1px solid var(--ritivel-border);
+  padding-bottom: 0.3em;
+}
+
+.vditor-reset h2 {
+  border-bottom: 1px solid var(--ritivel-border);
+  padding-bottom: 0.2em;
+}
+
+/* ============================================
+   BLOCKQUOTES
+   ============================================ */
+.vditor-reset blockquote {
+  border-left: 4px solid var(--ritivel-primary) !important;
+  background-color: var(--ritivel-primary-pale) !important;
+  padding: 12px 16px !important;
+  margin: 16px 0 !important;
+  border-radius: 0 var(--ritivel-radius) var(--ritivel-radius) 0 !important;
+  color: var(--ritivel-text-secondary) !important;
+}
+
+/* ============================================
+   TABLES
+   ============================================ */
+.vditor-reset table {
+  border-collapse: collapse;
+  margin: 16px 0;
+  width: 100%;
+}
+
+.vditor-reset th,
+.vditor-reset td {
+  border: 1px solid var(--ritivel-border) !important;
+  padding: 10px 14px !important;
+}
+
+.vditor-reset th {
+  background-color: var(--ritivel-primary-pale) !important;
+  color: var(--ritivel-text-primary) !important;
+  font-weight: 600;
+}
+
+.vditor-reset tr:hover {
+  background-color: rgba(126, 182, 232, 0.08) !important;
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+.vditor-reset::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.vditor-reset::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vditor-reset::-webkit-scrollbar-thumb {
+  background-color: var(--ritivel-border-strong);
+  border-radius: var(--ritivel-radius-sm);
+}
+
+.vditor-reset::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ritivel-text-muted);
+}
+
+/* ============================================
+   PAGE BREAK AND PAGE RENDERING
+   Word-like page visualization
+   ============================================ */
+/* Page size definitions in pixels at 96 DPI */
+:root {
+  /* A4: 210 × 297 mm = 8.27 × 11.69 in = 794 × 1123 px */
+  --page-size-a4-width: 794px;
+  --page-size-a4-height: 1123px;
+
+  /* A3: 297 × 420 mm = 11.69 × 16.54 in = 1123 × 1587 px */
+  --page-size-a3-width: 1123px;
+  --page-size-a3-height: 1587px;
+
+  /* A5: 148 × 210 mm = 5.83 × 8.27 in = 559 × 794 px */
+  --page-size-a5-width: 559px;
+  --page-size-a5-height: 794px;
+
+  /* Letter: 8.5 × 11 in = 816 × 1056 px */
+  --page-size-letter-width: 816px;
+  --page-size-letter-height: 1056px;
+
+  /* Legal: 8.5 × 14 in = 816 × 1344 px */
+  --page-size-legal-width: 816px;
+  --page-size-legal-height: 1344px;
+
+  /* Tabloid: 11 × 17 in = 1056 × 1632 px */
+  --page-size-tabloid-width: 1056px;
+  --page-size-tabloid-height: 1632px;
+
+  /* Default to A4 */
+  --page-width: var(--page-size-a4-width);
+  --page-height: var(--page-size-a4-height);
+}
+
+/* Default IR container - always show pages */
+.vditor-ir {
+  background-color: var(--vscode-editor-background, #f5f5f5);
+  padding: 40px 20px;
+  min-height: 100%;
+  position: relative; /* Essential for overlay positioning */
+}
+
+/* Page guide overlay */
+.page-guide-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.page-guide-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed var(--ritivel-border-strong);
+  color: var(--ritivel-text-muted);
+}
+
+.page-guide-label {
+  position: absolute;
+  right: 10px;
+  top: -20px;
+  font-size: 10px;
+  background-color: var(--vscode-editor-background);
+  padding: 2px 5px;
+  border-radius: 3px;
+  opacity: 0.6;
+}
+
+/* Page break visual separator - Manual breaks */
+.vditor-page-break {
+  display: block;
+  width: 100%;
+  height: 40px;
+  position: relative;
+  margin: 20px 0;
+  flex-shrink: 0;
+}
+
+.vditor-page-break::before {
+  content: 'Manual Page Break';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--ritivel-text-muted);
+  font-size: 10px;
+  letter-spacing: 2px;
+  background-color: var(--vscode-editor-background, #f5f5f5);
+  padding: 0 8px;
+  z-index: 1;
+}
+
+.vditor-page-break::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--ritivel-border-strong) 20%,
+    var(--ritivel-border-strong) 80%,
+    transparent
+  );
+  z-index: 0;
+}
+
+/* ============================================
+   PAGE SETTINGS DIALOG
+   Life Sciences Professional Modal
+   ============================================ */
+.page-settings-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.page-settings-dialog-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.page-settings-dialog {
+  background-color: var(--vscode-editorWidget-background, var(--ritivel-bg-elevated));
+  border: 1px solid var(--vscode-editorWidget-border, var(--ritivel-border));
+  border-radius: var(--ritivel-radius-lg);
+  box-shadow: var(--ritivel-shadow-lg);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  transform: scale(0.95);
+  transition: transform 0.2s ease;
+}
+
+.page-settings-dialog-overlay.visible .page-settings-dialog {
+  transform: scale(1);
+}
+
+.page-settings-dialog-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--ritivel-border));
+}
+
+.page-settings-dialog-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--vscode-foreground, var(--ritivel-text-primary));
+}
+
+.page-settings-dialog-body {
+  padding: 24px;
+}
+
+.page-settings-field {
+  margin-bottom: 20px;
+}
+
+.page-settings-field:last-child {
+  margin-bottom: 0;
+}
+
+.page-settings-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vscode-foreground, var(--ritivel-text-primary));
+}
+
+.page-settings-field input[type="text"],
+.page-settings-field select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background-color: var(--vscode-input-background, var(--ritivel-bg-surface));
+  color: var(--vscode-input-foreground, var(--ritivel-text-primary));
+  border: 1px solid var(--vscode-input-border, var(--ritivel-border));
+  border-radius: var(--ritivel-radius-sm);
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.page-settings-field input[type="text"]:focus,
+.page-settings-field select:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder, var(--ritivel-primary));
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+.page-settings-dialog-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--vscode-editorWidget-border, var(--ritivel-border));
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.page-settings-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--ritivel-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.page-settings-btn-cancel {
+  background-color: transparent;
+  color: var(--vscode-foreground, var(--ritivel-text-primary));
+  border: 1px solid var(--vscode-button-secondaryBackground, var(--ritivel-border));
+}
+
+.page-settings-btn-cancel:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground, var(--ritivel-bg-surface));
+}
+
+.page-settings-btn-apply {
+  background-color: var(--vscode-button-background, var(--ritivel-primary));
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.page-settings-btn-apply:hover {
+  background-color: var(--vscode-button-hoverBackground, var(--ritivel-primary-dark));
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   PRINT MEDIA QUERIES
+   For PDF Export
+   ============================================ */
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .page-break,
+  div.page-break {
+    page-break-after: always;
+    border: none;
+    margin: 0;
+    padding: 0;
+    height: 0;
+  }
+
+  /* Hide page break indicators in print */
+  .page-break-indicator {
+    display: none;
+  }
+
+  /* Ensure proper page margins */
+  @page {
+    margin: 2cm 1.5cm;
+  }
+
+  /* Headers and footers */
+  @page {
+    @top-center {
+      content: attr(data-header);
+    }
+    @bottom-center {
+      content: attr(data-footer);
+    }
+    @bottom-right {
+      content: counter(page);
+    }
+  }
 }

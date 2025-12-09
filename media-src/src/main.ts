@@ -17,7 +17,110 @@ import 'vditor/dist/index.css'
 import { t, lang } from './lang'
 import { toolbar } from './toolbar'
 import { fixTableIr } from './fix-table-ir'
+import { parseFrontmatter, updateFrontmatter, showPageSettingsDialog, PageSize } from './page-settings'
+import { exportToPdf, exportToDocx } from './document-export'
 import './main.css'
+
+/**
+ * Render page break guides (overlay) without modifying DOM structure
+ */
+function renderPageBreaks() {
+  if (!window.vditor) return
+
+  const irContainer = document.querySelector('.vditor-ir') as HTMLElement
+  if (!irContainer) return
+
+  // Get markdown content and parse frontmatter for page size
+  const markdown = vditor.getValue()
+  const { frontmatter } = parseFrontmatter(markdown)
+  const pageSize: PageSize = frontmatter.pageSize || 'A4'
+
+  // Update container data attribute
+  irContainer.setAttribute('data-page-size', pageSize)
+
+  // Render guides
+  renderPageGuides(irContainer, pageSize)
+}
+
+/**
+ * Get the maximum content height for a page based on page size
+ */
+function getPageHeight(pageSize: string): number {
+  // Page heights in pixels (at 96 DPI)
+  const pageHeights: Record<string, number> = {
+    'A3': 1587,
+    'A4': 1123,
+    'A5': 794,
+    'Letter': 1056,
+    'Legal': 1344,
+    'Tabloid': 1632
+  }
+
+  return pageHeights[pageSize] || 1123
+}
+
+/**
+ * Render page guides as an overlay
+ */
+function renderPageGuides(container: HTMLElement, pageSize: string) {
+  // Remove existing overlay
+  const existingOverlay = document.getElementById('page-guide-overlay')
+  if (existingOverlay) {
+    existingOverlay.remove()
+  }
+
+  // Create overlay container
+  const overlay = document.createElement('div')
+  overlay.id = 'page-guide-overlay'
+  overlay.className = 'page-guide-overlay'
+
+  // Calculate heights
+  const pageHeight = getPageHeight(pageSize)
+  // Margins (96px = 1 inch)
+  const marginY = 96
+  const contentHeight = pageHeight - (marginY * 2)
+
+  // Get all block elements to measure content
+  // We don't measure exact content height because it's dynamic,
+  // instead we place guides at fixed intervals relative to the document flow?
+  // No, that doesn't account for content density.
+  // We need to just place guides at fixed pixel intervals from the top of the container.
+
+  const containerHeight = container.scrollHeight
+  const totalPages = Math.ceil(containerHeight / contentHeight) + 1
+
+  // Draw page separators
+  for (let i = 1; i < totalPages; i++) {
+    const top = i * contentHeight + (i * marginY * 2) // Rough approximation including margins if we were printing
+    // Actually, for an editor view without physical pages, we just want to show where the break is.
+    // Let's assume the editor is a continuous scroll.
+    // The print output will slice this content.
+    // If we want WYSIWYG, we usually paginate.
+    // If the user wants "just how the page started i want it to end",
+    // simply drawing a line every X pixels is the most robust way that doesn't break the editor.
+
+    // However, simply drawing lines at 1123px intervals is naive if elements have margins.
+    // But it's the best non-destructive approximation.
+
+    // Let's use the pageHeight (e.g. 1123px for A4) as the interval.
+    const breakTop = i * pageHeight
+
+    if (breakTop > containerHeight) break
+
+    const guide = document.createElement('div')
+    guide.className = 'page-guide-line'
+    guide.style.top = `${breakTop}px`
+    guide.innerHTML = `<span class="page-guide-label">Page ${i} End / Page ${i + 1} Start</span>`
+    overlay.appendChild(guide)
+  }
+
+  // Append overlay to container
+  // We need to make sure container is positioned relative
+  if (getComputedStyle(container).position === 'static') {
+    container.style.position = 'relative'
+  }
+  container.appendChild(overlay)
+}
 
 function initVditor(msg) {
   console.log('msg', msg)
@@ -61,11 +164,14 @@ function initVditor(msg) {
       handleToolbarClick()
       fixTableIr()
       fixPanelHover()
+      renderPageBreaks()
     },
     input() {
       inputTimer && clearTimeout(inputTimer)
       inputTimer = setTimeout(() => {
         vscode.postMessage({ command: 'edit', content: vditor.getValue() })
+        // Re-render page breaks after content changes (with longer delay to ensure DOM is updated)
+        setTimeout(() => renderPageBreaks(), 150)
       }, 100)
     },
     upload: {
@@ -121,6 +227,8 @@ window.addEventListener('message', (e) => {
           console.log('setValue - content updated')
           // Clear decorations when content is updated externally
           clearDecorations()
+          // Re-render page breaks (with delay to ensure DOM is updated)
+          setTimeout(() => renderPageBreaks(), 200)
         } else {
           console.log('setValue - content unchanged, skipping update')
         }
@@ -179,6 +287,46 @@ window.addEventListener('message', (e) => {
           command: 'current-content',
           content: content
         })
+      }
+      break
+    }
+    case 'insert-page-break': {
+      if (window.vditor) {
+        vditor.insertValue('\n\n<!-- pagebreak -->\n\n')
+      }
+      break
+    }
+    case 'open-page-settings': {
+      if (window.vditor) {
+        const content = vditor.getValue()
+        const { frontmatter } = parseFrontmatter(content)
+        showPageSettingsDialog(frontmatter, (settings) => {
+          const updated = updateFrontmatter(content, settings)
+          vditor.setValue(updated)
+          // Re-render pages with new settings
+          setTimeout(() => renderPageBreaks(), 50)
+          // Sync to editor
+          vscode.postMessage({
+            command: 'edit',
+            content: updated,
+          })
+        })
+      }
+      break
+    }
+    case 'export-pdf': {
+      if (window.vditor) {
+        const content = vditor.getValue()
+        exportToPdf(content)
+      }
+      break
+    }
+    case 'export-docx': {
+      if (window.vditor) {
+        const content = vditor.getValue()
+        // Get filename from document or use default
+        const filename = 'document.docx'
+        exportToDocx(content, filename)
       }
       break
     }
@@ -887,5 +1035,8 @@ function hideFloatingToolbar() {
   }
   console.log('[MarkdownEditor] Hiding floating toolbar')
 }
+
+// Make renderPageBreaks globally accessible
+;(window as any).renderPageBreaks = renderPageBreaks
 
 vscode.postMessage({ command: 'ready' })

@@ -599,6 +599,46 @@ class EditorPanel {
             }
             break
           }
+          case 'save-pdf': {
+            try {
+              // Show save dialog
+              const defaultUri = vscode.Uri.file(
+                NodePath.join(
+                  NodePath.dirname(this._fsPath),
+                  message.filename || 'document.pdf'
+                )
+              )
+              const saveUri = await vscode.window.showSaveDialog({
+                defaultUri,
+                filters: {
+                  'PDF Files': ['pdf']
+                },
+                saveLabel: 'Save PDF'
+              })
+
+              if (saveUri) {
+                // Convert base64 to buffer
+                const pdfBuffer = Buffer.from(message.pdfData, 'base64')
+                await vscode.workspace.fs.writeFile(saveUri, pdfBuffer)
+
+                vscode.window.showInformationMessage(`PDF saved to ${NodePath.basename(saveUri.fsPath)}`)
+
+                // Optionally open the PDF
+                const openPdf = await vscode.window.showInformationMessage(
+                  'PDF saved successfully. Would you like to open it?',
+                  'Open PDF',
+                  'Cancel'
+                )
+
+                if (openPdf === 'Open PDF') {
+                  await vscode.commands.executeCommand('vscode.open', saveUri)
+                }
+              }
+            } catch (error: any) {
+              showError(`Failed to save PDF: ${error.message}`)
+            }
+            break
+          }
         }
       },
       null,
